@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --aegis-950: #100b1d;
+  --aegis-900: #18112b;
+  --aegis-850: #21183a;
+  --aegis-800: #2b1f49;
+  --aegis-700: #423260;
+  --aegis-600: #665383;
+  --aegis-500: #9a8fba;
+  --aegis-300: #ddd6fe;
+  --aegis-100: #f5f3ff;
+  --aegis-violet: #8b5cf6;
+  --aegis-violet-strong: #7c3aed;
+  --aegis-lavender: #c4b5fd;
+  --surface: var(--aegis-950);
+  --surface-raised: var(--aegis-900);
+  --surface-interactive: var(--aegis-850);
+  --border: #342653;
+  --text-muted: #aaa0c6;
+  --primary: var(--aegis-violet-strong);
+  --primary-hover: #8b5cf6;
+  --success: #34d399;
+  --danger: #fb7185;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--aegis-950);
+  background-image: radial-gradient(circle at 90% -10%, rgba(124, 58, 237, 0.18), transparent 30%), radial-gradient(circle at -10% 80%, rgba(76, 29, 149, 0.14), transparent 28%);
+  color: var(--aegis-100);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Global night-operations palette.  Existing views use Tailwind's original
+   zinc/slate and emerald utility names, so these aliases keep every route in
+   the same visual system without changing component behavior. */
+.bg-zinc-950, .bg-slate-950 { background-color: var(--aegis-950) !important; }
+.bg-zinc-900, .bg-slate-900 { background-color: var(--aegis-900) !important; }
+.bg-zinc-800, .bg-slate-800 { background-color: var(--aegis-800) !important; }
+.bg-zinc-700, .bg-slate-700 { background-color: var(--aegis-700) !important; }
+.bg-zinc-600, .bg-slate-600 { background-color: var(--aegis-600) !important; }
+
+.border-zinc-800, .border-slate-800 { border-color: #342653 !important; }
+.border-zinc-700, .border-slate-700 { border-color: var(--aegis-700) !important; }
+.border-zinc-600, .border-slate-600 { border-color: var(--aegis-600) !important; }
+.divide-zinc-800 > :not([hidden]) ~ :not([hidden]) { border-color: #342653 !important; }
+
+.text-zinc-100, .text-slate-100 { color: var(--aegis-100) !important; }
+.text-zinc-200, .text-slate-200 { color: #ece7ff !important; }
+.text-zinc-300, .text-slate-300 { color: #d5cdea !important; }
+.text-zinc-400, .text-slate-400 { color: #aaa0c6 !important; }
+.text-zinc-500, .text-slate-500 { color: #867b9f !important; }
+.text-zinc-600, .text-slate-600 { color: #6c607e !important; }
+
+/* Semantic theme hooks.  Product actions and navigation highlights are violet;
+   Tailwind emerald stays untouched for genuine success, pass, and availability states. */
+.aegis-primary,
+button.bg-emerald-500,
+a.bg-emerald-500,
+button.bg-cyan-500,
+a.bg-cyan-500 {
+  background-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+.aegis-primary:hover,
+button.hover\:bg-emerald-400:hover,
+a.hover\:bg-emerald-400:hover,
+button.hover\:bg-cyan-400:hover,
+a.hover\:bg-cyan-400:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.aegis-highlight,
+a[class*="text-cyan-"],
+[class*="text-cyan-"] {
+  color: var(--aegis-lavender) !important;
+}
+
+.aegis-success { color: var(--success) !important; }
+.aegis-success-surface { border-color: rgb(52 211 153 / 0.36) !important; background-color: rgb(52 211 153 / 0.12) !important; }
+.aegis-danger { color: var(--danger) !important; }
+
+.hover\:bg-zinc-900:hover, .hover\:bg-slate-900:hover { background-color: var(--aegis-850) !important; }
+.hover\:bg-zinc-800:hover, .hover\:bg-slate-800:hover { background-color: #33264e !important; }
+.hover\:bg-cyan-400:hover { background-color: #a78bfa !important; }
+.hover\:bg-cyan-200:hover { background-color: #ddd6fe !important; }
+.hover\:text-cyan-300:hover { color: #ddd6fe !important; }
+
+input, textarea, select {
+  caret-color: var(--aegis-lavender);
+}
+
+:focus-visible {
+  outline: 2px solid var(--aegis-lavender);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: rgb(139 92 246 / 0.45);
+  color: #fff;
+}

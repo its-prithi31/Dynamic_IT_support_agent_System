@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aegis-backend
+  namespace: aegis-support
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aegis-backend
+  template:
+    metadata:
+      labels:
+        app: aegis-backend
+    spec:
+      containers:
+        - name: backend
+          image: aegis-support-backend:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: aegis-secrets
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: aegis-secrets
+                  key: jwt-secret
+            - name: CORS_ORIGINS
+              value: http://localhost:3000,http://127.0.0.1:3000
+            - name: LLM_PROVIDER
+              value: ollama
+            - name: OLLAMA_URL
+              value: http://aegis-ollama:11434

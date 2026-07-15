@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  frontend:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    ports: ["3000:4173"]
+    environment: ["VITE_API_URL=http://localhost:4000/api"]
+    depends_on: [backend]
+  backend:
+    build: ./backend
+    ports: ["4000:4000"]
+    environment:
+      DATABASE_URL: sqlite:///./aegis.db
+      JWT_SECRET: ${JWT_SECRET:-development-secret-change-before-production}
+      CORS_ORIGINS: http://localhost:3000
+    depends_on: [postgres]
+  postgres:
+    image: postgres:16-alpine
+    environment: ["POSTGRES_USER=aegis", "POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aegis_password}", "POSTGRES_DB=aegis"]
+    volumes: ["postgres_data:/var/lib/postgresql/data"]
+volumes: { postgres_data: {} }
+
+# This demo compose avoids an Ollama dependency so you can run locally without a local LLM.

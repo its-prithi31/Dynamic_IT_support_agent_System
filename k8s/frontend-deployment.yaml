@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aegis-frontend
+  namespace: aegis-support
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aegis-frontend
+  template:
+    metadata:
+      labels:
+        app: aegis-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: aegis-support-frontend:latest
+          ports:
+            - containerPort: 4173
+          env:
+            - name: VITE_API_URL
+              value: http://aegis-backend:4000/api

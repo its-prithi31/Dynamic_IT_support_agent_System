@@ -1,0 +1,9 @@
+{
+  "name": "dynamic-it-support-agent-backend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "uvicorn backend.app:app --reload --host 0.0.0.0 --port 4000",
+    "start": "uvicorn backend.app:app --host 0.0.0.0 --port 4000"
+  }
+}
