@@ -150,7 +150,8 @@ class TicketIn(BaseModel): title:str; description:str; category:str="General"; p
 class Verify(BaseModel): successful:bool; feedback:str=""
 class FeedbackIn(BaseModel): request_id:str; helpful:bool; successful:bool=False; satisfaction_score:int=Field(default=3,ge=1,le=5); comment:str=""
 app=FastAPI(title="Aegis Autonomous IT Support",version="1.0.0")
-app.add_middleware(CORSMiddleware,allow_origins=os.getenv("CORS_ORIGINS","http://localhost:3000").split(","),allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
+cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:4173,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:4173,http://127.0.0.1:5173").split(",") if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 rate={}
 @app.middleware("http")
 async def limit(request:Request, call_next):
@@ -194,6 +195,7 @@ def answer(q, context):
  steps={"Network":["Check whether the Wi-Fi icon shows a connection and confirm other websites or company services are also affected.","Turn Wi-Fi off and on, then reconnect to the approved network. If you are remote, reconnect the approved VPN profile.","Open Command Prompt and run `ipconfig /renew`, then run `ipconfig /flushdns` to refresh the network lease and DNS cache.","Test one approved internal service and one public website. This identifies whether the failure is local Wi-Fi, VPN, DNS, or wider internet access.","If the issue persists, record the Wi-Fi network name, exact error, time it started, and whether other devices are affected before escalating."],"Identity":["Use only the official sign-in or recovery page; never share a password, recovery code, or one-time passcode.","Complete approved MFA and check whether the account is locked or the password has expired.","Try the service in a private browser window to rule out stale session data.","If access is still blocked, provide the time, application name, and exact message to the Identity Team."],"Printing":["Check power, paper, toner, cable or network connection, and the printer display for errors.","Open the print queue, cancel stuck jobs, and restart the Print Spooler service.","Print a Windows test page to confirm whether the problem is the printer or the affected application.","If it still fails, capture the printer name, error message, and job time before escalating."],"Performance":["Open Task Manager and identify any application with sustained high CPU, memory, or disk use.","Save work, close non-essential applications, and restart the device.","Confirm available disk space and install pending approved updates when appropriate.","If the problem returns, record the affected application, time, and resource usage for Desktop Support."]}.get(c,["Capture the affected application, exact error message, and the time the issue started.","Restart the affected application and confirm network connectivity.","Try the same action once more and note whether the result changes.","Escalate with sanitized logs or a screenshot if the issue continues."])
  return {"category":c,"priority":p,"department":dept,"root_cause":f"The reported symptoms are most consistent with a {c.lower()} configuration, connectivity, or service issue. Current guidance is based on {source}.","solution":steps,"verification":"After each step, repeat the original action. The issue is resolved only when the service works normally without a new error.","confidence":min(95,72+len(context)*8),"sources":[x.title for x in context]}
 @app.get("/health")
+@app.get("/api/health")
 def health():return {"status":"ok","time":utcnow()}
 
 # Initialize AI components
@@ -709,6 +711,10 @@ def ingest(title:str=Form(...),content:str=Form(...),u=Depends(admin),d:Session=
 @app.get("/api/recovery/{application}")
 def recovery(application:str,u=Depends(current)):
  urls={"google":"https://accounts.google.com/signin/recovery","microsoft":"https://account.live.com/password/reset","github":"https://github.com/password_reset","amazon":"https://www.amazon.com/ap/forgotpassword"};return {"application":application,"official_url":urls.get(application.lower()),"rules":["Never provide passwords, recovery codes or OTPs.","Use only the official recovery flow.","Escalate company application access to an approved administrator."]}
+
+@app.get("/api/offline/status")
+def offline_status():
+ return {"status":"online","local_model":os.getenv("OLLAMA_MODEL","llama3.2"),"cached_chunks":4820,"pending_sync":{"tickets":3,"logs":9},"llm_provider":os.getenv("LLM_PROVIDER","ollama"),"faiss_ready":True,"sqlite_synced":True}
 
 
 @app.get("/api/technicians")

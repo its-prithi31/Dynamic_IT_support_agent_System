@@ -15,6 +15,11 @@
     "frontend:build": "npm --workspace frontend run build",
     "frontend:preview": "npm --workspace frontend run preview",
     "backend:dev": "npm --workspace backend run dev",
-    "backend:start": "npm --workspace backend run start"
+    "backend:start": "npm --workspace backend run start",
+    "backend": "python -m uvicorn backend.app:app --reload --host 0.0.0.0 --port 4000",
+    "start": "powershell -ExecutionPolicy Bypass -File ./scripts/run-all.ps1"
+  },
+  "dependencies": {
+    "baseline-browser-mapping": "^2.11.28"
   }
 }
