@@ -143,7 +143,7 @@ def confidence_threshold(d: Session) -> int:
  policy=d.query(ConfidencePolicy).order_by(ConfidencePolicy.id.asc()).first()
  return policy.auto_resolve_threshold if policy else 85
 
-class Register(BaseModel): name:str=Field(min_length=2,max_length=120); email:EmailStr; password:str=Field(min_length=10,max_length=128)
+class Register(BaseModel): name:str=Field(min_length=2,max_length=120); email:EmailStr; password:str=Field(min_length=6,max_length=128)
 class Refresh(BaseModel): refresh_token:str
 class Chat(BaseModel): query:str=Field(min_length=2,max_length=12000); attachment_ids:list[str]=[]
 class TicketIn(BaseModel): title:str; description:str; category:str="General"; priority:str="Medium"
@@ -151,7 +151,14 @@ class Verify(BaseModel): successful:bool; feedback:str=""
 class FeedbackIn(BaseModel): request_id:str; helpful:bool; successful:bool=False; satisfaction_score:int=Field(default=3,ge=1,le=5); comment:str=""
 app=FastAPI(title="Aegis Autonomous IT Support",version="1.0.0")
 cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:4173,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:4173,http://127.0.0.1:5173").split(",") if o.strip()]
-app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$", allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if os.getenv("CORS_ORIGINS") == "*" else cors_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.github\.io|.*\.vercel\.app|.*\.onrender\.com)(:\d+)?$",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 rate={}
 @app.middleware("http")
 async def limit(request:Request, call_next):

@@ -24,7 +24,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <input required minLength={2} value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3" placeholder="Full name" />
           <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3" placeholder="Work email" />
-          <input required minLength={10} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3" placeholder="Password (at least 10 characters)" />
+          <input required minLength={6} type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3" placeholder="Password (at least 6 characters)" />
           <p className="text-xs text-slate-400">New accounts are created as Employees. An administrator assigns elevated roles.</p>
           {error && <p className="text-sm text-rose-400">{error}</p>}
           <button className="w-full rounded-xl bg-cyan-500 px-4 py-3 font-semibold text-slate-950">Register</button>

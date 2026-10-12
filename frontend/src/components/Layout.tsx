@@ -10,13 +10,15 @@ import {
   LifeBuoy,
   LogOut,
   Menu,
+  Server,
   ShieldCheck,
   TicketCheck,
   UserCheck,
   X,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getApiBaseUrl, getBackendMode, setApiBaseUrl, subscribeBackendMode } from '../services/api';
 
 const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -35,6 +37,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [backendMode, setBackendMode] = useState<'live' | 'demo'>(getBackendMode());
+  const [showConfig, setShowConfig] = useState(false);
+  const [customUrl, setCustomUrl] = useState(getApiBaseUrl());
+
+  useEffect(() => {
+    return subscribeBackendMode((mode) => setBackendMode(mode));
+  }, []);
+
+  const handleSaveApiUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    setApiBaseUrl(customUrl);
+    setShowConfig(false);
+    window.location.reload();
+  };
+
+  const handleResetApiUrl = () => {
+    setApiBaseUrl('');
+    setCustomUrl('/api');
+    setShowConfig(false);
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -114,15 +137,89 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <p className="truncate text-sm text-zinc-400">AI-Powered Autonomous IT Support and Secure Digital Assistant</p>
                 <p className="text-xs text-zinc-500">Frontend console connected to FastAPI, JWT, WebSocket, RAG, and offline AI APIs.</p>
               </div>
-              <div className="hidden items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 md:flex">
-                <ShieldCheck size={16} />
-                Secure session
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowConfig(true)}
+                  title="Click to check or change backend API connection settings"
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                    backendMode === 'live'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20'
+                      : 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${backendMode === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                  {backendMode === 'live' ? 'Live Backend Connected' : 'Demo / Cloud Preview'}
+                </button>
+                <div className="hidden items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200 md:flex">
+                  <ShieldCheck size={16} />
+                  Secure session
+                </div>
               </div>
             </div>
           </header>
           <main className="mx-auto max-w-7xl p-4 md:p-8">{children}</main>
         </div>
       </div>
+
+      {showConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-300">
+                <Server size={20} />
+                <h3 className="text-lg font-semibold">Backend Connection Settings</h3>
+              </div>
+              <button onClick={() => setShowConfig(false)} className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3 text-sm">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+                <p className="text-xs text-zinc-400">Current Mode</p>
+                <p className="mt-1 font-semibold text-zinc-200">
+                  {backendMode === 'live' ? '🟢 Live FastAPI Server' : '⚡ Client-Side Autonomous Demo (Offline)'}
+                </p>
+                <p className="mt-1 text-xs text-zinc-400">
+                  {backendMode === 'live'
+                    ? 'Connected to active Python FastAPI endpoints on ' + getApiBaseUrl()
+                    : 'Backend server not detected on this domain. Running self-contained IT support simulation.'}
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveApiUrl} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300">Custom Backend API URL</label>
+                  <input
+                    type="text"
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    placeholder="https://your-backend.onrender.com/api or /api"
+                    className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs text-zinc-200 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                  />
+                  <p className="mt-1 text-xs text-zinc-400">
+                    Leave as <code className="text-emerald-300">/api</code> for local Vite proxy, or enter your deployed backend URL.
+                  </p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
+                  >
+                    Save & Reconnect
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetApiUrl}
+                    className="rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800"
+                  >
+                    Reset Default
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

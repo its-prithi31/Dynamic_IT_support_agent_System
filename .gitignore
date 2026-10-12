@@ -6,3 +6,6 @@ frontend/.tmp-build/
 *.env
 __pycache__/
 *.pyc
+*.err
+*.out
+.pytest_cache/

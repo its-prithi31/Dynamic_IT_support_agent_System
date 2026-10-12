@@ -1,37 +1,119 @@
-const CONFIGURED_API_BASE = import.meta.env.VITE_API_URL || '/api';
-const DIRECT_API_FALLBACK = 'http://127.0.0.1:4000/api';
+import { handleMockRequest } from './mockBackend';
+
+let currentBackendMode: 'live' | 'demo' = 'live';
+const listeners: Array<(mode: 'live' | 'demo') => void> = [];
+
+export function getBackendMode(): 'live' | 'demo' {
+  return currentBackendMode;
+}
+
+export function subscribeBackendMode(callback: (mode: 'live' | 'demo') => void) {
+  listeners.push(callback);
+  callback(currentBackendMode);
+  return () => {
+    const idx = listeners.indexOf(callback);
+    if (idx !== -1) listeners.splice(idx, 1);
+  };
+}
+
+function setBackendMode(mode: 'live' | 'demo') {
+  if (currentBackendMode !== mode) {
+    currentBackendMode = mode;
+    listeners.forEach((cb) => cb(mode));
+  }
+}
+
+export function getApiBaseUrl(): string {
+  const custom = localStorage.getItem('aegis-api-url');
+  if (custom && custom.trim()) return custom.trim().replace(/\/$/, '');
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL.replace(/\/$/, '');
+  // Default to relative /api which is proxied by Vite or web server
+  return '/api';
+}
+
+export function setApiBaseUrl(url: string) {
+  if (url && url.trim()) {
+    localStorage.setItem('aegis-api-url', url.trim());
+  } else {
+    localStorage.removeItem('aegis-api-url');
+  }
+  // Reset mode to attempt live with new URL
+  setBackendMode('live');
+}
+
+const DIRECT_LOCAL_FALLBACK = 'http://127.0.0.1:4000/api';
 
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('aegis-access-token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+function createMockResponse(data: any): Response {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 async function fetchWithFallback(endpoint: string, init?: RequestInit): Promise<Response> {
-  const url = `${CONFIGURED_API_BASE}${endpoint}`;
+  const apiBase = getApiBaseUrl();
+  const url = `${apiBase}${endpoint}`;
+
   try {
     const response = await fetch(url, init);
-    // If the relative /api proxy returns 404 (e.g. backend was not reached or unproxied preview), try direct backend port 4000
-    if (response.status === 404 && CONFIGURED_API_BASE === '/api' && !endpoint.includes('://')) {
+
+    // If server responds with valid status (even 400/401/403/409/422 with JSON), it's a real live backend
+    if (response.ok) {
+      setBackendMode('live');
+      return response;
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json') && response.status !== 404) {
+      // Backend returned valid JSON error (e.g. 401 Unauthorized, 422 Unprocessable)
+      setBackendMode('live');
+      return response;
+    }
+
+    // If 404 on relative /api, attempt direct connection to local port 4000
+    if (response.status === 404 && apiBase === '/api' && !endpoint.includes('://')) {
       try {
-        const directResponse = await fetch(`${DIRECT_API_FALLBACK}${endpoint}`, init);
+        const directResponse = await fetch(`${DIRECT_LOCAL_FALLBACK}${endpoint}`, init);
         if (directResponse.status !== 404) {
+          setBackendMode('live');
           return directResponse;
         }
       } catch {
-        // Fall back to original response
+        // Fall back to client-side demo mode
       }
     }
+
+    // If still 404 or non-JSON error on static deployment, smoothly fall back to client-side demo
+    if (response.status === 404 || !contentType.includes('application/json')) {
+      setBackendMode('demo');
+      const mockData = handleMockRequest(endpoint, init);
+      return createMockResponse(mockData);
+    }
+
     return response;
-  } catch (networkError) {
-    // If relative /api network request failed, attempt direct connection to backend
-    if (CONFIGURED_API_BASE === '/api' && !endpoint.includes('://')) {
+  } catch (_networkError) {
+    // Network failed (e.g. port closed, offline, mixed-content blocked)
+    // Try local port 4000 if not already tried
+    if (apiBase === '/api') {
       try {
-        return await fetch(`${DIRECT_API_FALLBACK}${endpoint}`, init);
+        const directResponse = await fetch(`${DIRECT_LOCAL_FALLBACK}${endpoint}`, init);
+        if (directResponse.status !== 404) {
+          setBackendMode('live');
+          return directResponse;
+        }
       } catch {
-        throw new Error('Cannot connect to the Aegis backend. Please ensure the backend is running on http://127.0.0.1:4000.');
+        // Fall back to client-side demo mode
       }
     }
-    throw networkError;
+
+    setBackendMode('demo');
+    const mockData = handleMockRequest(endpoint, init);
+    return createMockResponse(mockData);
   }
 }
 
@@ -41,6 +123,7 @@ async function jsonOrError(response: Response) {
   const detail = Array.isArray(data?.detail)
     ? data.detail.map((issue: { msg?: string }) => issue.msg || 'Invalid input.').join(' ')
     : typeof data?.detail === 'string' ? data.detail : '';
+
   if (!response.ok) {
     if (detail) throw new Error(detail);
     if (response.status === 404) throw new Error(`The requested endpoint was not found (HTTP 404). Ensure the backend is running on port 4000.`);
@@ -49,9 +132,11 @@ async function jsonOrError(response: Response) {
     if (response.status === 409) throw new Error(`Email already registered.`);
     throw new Error(`The request could not be completed (HTTP ${response.status}).`);
   }
+
   if (data === null) {
-    throw new Error('The backend returned an empty or invalid response. Ensure the backend is running on port 4000.');
+    throw new Error('The backend returned an empty response.');
   }
+
   return data;
 }
 
@@ -180,7 +265,8 @@ export async function fetchAIResponses() {
 }
 
 export function aiMonitorWebSocketUrl() {
-  const base = import.meta.env.VITE_API_URL || '';
+  const custom = localStorage.getItem('aegis-api-url');
+  const base = custom || import.meta.env.VITE_API_URL || '';
   const token = localStorage.getItem('aegis-access-token');
   const auth = token ? `?token=${encodeURIComponent(token)}` : '';
   if (!base) {
